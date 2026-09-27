@@ -99,10 +99,11 @@ enum_start (eq_sharp_source)
   enum_value (EQ_SHARP_SOURCE_BLUE,       "blue",       N_("B to brightness"))
 enum_end (EqSharpSource)
 
-property_enum (output, _("Output"),
+property_enum (output_mode, _("Output"),
                EqSharpOutput, eq_sharp_output, EQ_SHARP_OUTPUT_IMAGE)
   description (_("The sharpened image, the mask, or the difference "
-                 "between image and mask"))
+                 "between image and mask (not called \"output\": GIMP "
+                 "leaves out a property named like the output pad)"))
 
 #define EQ_AMOUNT(n, label, at)                                          \
   property_double (amount_##n, label, 1.0)                               \
@@ -113,7 +114,7 @@ property_enum (output, _("Output"),
                    "factor is interpolated"))                             \
     value_range (0.0, 2.5)                                               \
     ui_digits (2)                                                        \
-    ui_meta ("visible", "output {image}")
+    ui_meta ("visible", "output-mode {image}")
 
 EQ_AMOUNT (1, _("Contrast 0"),              "0")
 EQ_AMOUNT (2, _("Contrast 0.0075"),         "0.0075")
@@ -158,28 +159,28 @@ property_double (dark, _("Dark"), 0.0)
                  "the new brightness of black; local contrast is kept"))
   value_range (-0.4, 0.7)
   ui_digits (3)
-  ui_meta ("visible", "! output {difference}")
+  ui_meta ("visible", "! output-mode {difference}")
 
 property_double (light, _("Light"), 1.0)
   description (_("Brightness adjustment through the mask: the new "
                  "brightness of white"))
   value_range (0.5, 1.4)
   ui_digits (3)
-  ui_meta ("visible", "! output {difference}")
+  ui_meta ("visible", "! output-mode {difference}")
 
 property_double (central_brightness, _("Central brightness"), 0.5)
   description (_("Difference output: the brightness where image and "
                  "mask are equal"))
   value_range (0.0, 1.0)
   ui_digits (2)
-  ui_meta ("visible", "output {difference}")
+  ui_meta ("visible", "output-mode {difference}")
 
 property_double (diff_boost, _("Difference boost"), 2.0)
   description (_("Difference output: multiplies the difference between "
                  "mask and image"))
   value_range (-10.0, 10.0)
   ui_digits (1)
-  ui_meta ("visible", "output {difference}")
+  ui_meta ("visible", "output-mode {difference}")
 
 #else
 
@@ -643,8 +644,8 @@ params_get (GeglProperties *o,
   static const gint modes[] = { BRIGHT_OWN, HSV, HSL, RCHAN, GCHAN, BCHAN };
 
   p->colormode = modes[CLAMP ((gint) o->source, 0, 5)];
-  p->action = o->output == EQ_SHARP_OUTPUT_MASK ? MASK :
-              o->output == EQ_SHARP_OUTPUT_DIFFERENCE ? MASKDIFF : NORMAL;
+  p->action = o->output_mode == EQ_SHARP_OUTPUT_MASK ? MASK :
+              o->output_mode == EQ_SHARP_OUTPUT_DIFFERENCE ? MASKDIFF : NORMAL;
   p->blurmode = o->blur == EQ_SHARP_BLUR_SELECTIVE ? SELBLUR :
                 o->blur == EQ_SHARP_BLUR_POSTBLUR ? POSTBLUR : B_NORMAL;
   /* the plug-in keeps its settings as floats */
@@ -680,7 +681,7 @@ reach (GeglProperties *o)
 static gboolean
 is_neutral (GeglProperties *o)
 {
-  return o->output == EQ_SHARP_OUTPUT_IMAGE &&
+  return o->output_mode == EQ_SHARP_OUTPUT_IMAGE &&
          o->amount_1 == 1.0 && o->amount_2 == 1.0 && o->amount_3 == 1.0 &&
          o->amount_4 == 1.0 && o->amount_5 == 1.0 &&
          o->dark == 0.0 && o->light == 1.0 &&

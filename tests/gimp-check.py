@@ -39,7 +39,7 @@ ENUMS = {
         'color_mode': ['quadratic', 'safe-quadratic', 'hsv', 'hsl', 'yuv'],
         'balance': ['off', 'layer', 'color']},
     'equalizer:sharpness': {
-        'output': ['image', 'mask', 'difference'],
+        'output_mode': ['image', 'mask', 'difference'],
         'blur': ['standard', 'selective', 'postblur'],
         'source': ['brightness', 'value', 'lightness', 'red', 'green', 'blue']},
 }
@@ -64,7 +64,7 @@ CASES = [
      {'amount_2': 2.0, 'amount_3': 2.2, 'blur': 'postblur', 'threshold': 0.15,
       'postblur_radius': 4, 'source': 'value', 'dark': 0.05, 'light': 0.95}),
     ('sharpness_difference', 'equalizer:sharpness', 'Advanced Unsharp Mask',
-     {'output': 'difference', 'diff_boost': 4.0, 'central_brightness': 0.4, 'radius': 6}),
+     {'output_mode': 'difference', 'diff_boost': 4.0, 'central_brightness': 0.4, 'radius': 6}),
 ]
 
 

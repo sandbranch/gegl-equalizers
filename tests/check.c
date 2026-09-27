@@ -262,8 +262,8 @@ static const gchar *const shp_settings[] = {
   "amount_3=2.5 blur=postblur postblur_radius=4 source=value",
   "amount_2=0.3 source=lightness dark=0.1 light=0.9 radius=40",
   "amount_4=2 source=red radius=7",
-  "output=mask radius=15 source=green",
-  "output=difference diff_boost=-4 central_brightness=0.4 radius=3",
+  "output_mode=mask radius=15 source=green",
+  "output_mode=difference diff_boost=-4 central_brightness=0.4 radius=3",
   "amount_1=2 radius=100",
 };
 
@@ -546,7 +546,7 @@ check_sharpness (void)
   d = max_diff (u, out, n, TRUE);
   report ("sharpness_uniform_layer_unchanged", d < 2e-6, "max difference %.2g", d);
   g_free (out);
-  out = run (SHP, "output=difference", u, w, h);
+  out = run (SHP, "output_mode=difference", u, w, h);
   d = fabs (out[0] - ungam (0.5)) + fabs (out[4 * (n - 1) + 2] - ungam (0.5));
   report ("sharpness_difference_of_a_uniform_layer_is_the_central_brightness", d < 1e-6,
           "%.6f (want %.6f)", out[0], ungam (0.5));
@@ -575,12 +575,12 @@ check_sharpness (void)
   }
   g_free (out);
   out  = run (SHP, "amount_1=0 amount_2=0 amount_3=0 amount_4=0 amount_5=0 radius=6", step, w, h);
-  out2 = run (SHP, "output=mask radius=6", step, w, h);
+  out2 = run (SHP, "output_mode=mask radius=6", step, w, h);
   d = max_diff (out, out2, n, FALSE);
   report ("sharpness_amounts_at_0_give_the_mask_on_grays", d < 1e-6, "max difference %.2g", d);
   g_free (out);
   g_free (out2);
-  out = run (SHP, "output=mask blur=selective threshold=0.1 radius=10", step, w, h);
+  out = run (SHP, "output_mode=mask blur=selective threshold=0.1 radius=10", step, w, h);
   d = MAX (fabs (out[4 * (20 * w + w / 2 - 1)] - 0.2), fabs (out[4 * (20 * w + w / 2)] - 0.6));
   report ("sharpness_selective_mask_keeps_the_edge", d < 1e-6, "max difference %.2g", d);
   g_free (out);
@@ -682,7 +682,7 @@ check_bad_values (void)
     "amount_1=0 amount_5=2.5 blur=selective threshold=0.02 radius=3",
     "amount_2=2.5 blur=postblur threshold=1 postblur_radius=10 source=value dark=-0.4 light=1.4",
     "amount_3=2.5 source=lightness dark=0.7 light=0.5",
-    "output=difference diff_boost=10 source=blue",
+    "output_mode=difference diff_boost=10 source=blue",
     NULL,
   };
   gint    w = 40, h = 30, n = w * h, i, k;

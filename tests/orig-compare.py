@@ -222,7 +222,7 @@ def aumask_args(props, fixed):
             continue
         name = {'radius': 'radius', 'postblur_radius': 'postradius', 'threshold': 'tresh',
                 'dark': 'newdark', 'light': 'newlight', 'blur': 'blurmode',
-                'source': 'colormode', 'output': 'action', 'diff_boost': 'mask_boost',
+                'source': 'colormode', 'output_mode': 'action', 'diff_boost': 'mask_boost',
                 'central_brightness': 'mask_pos'}[k]
         a.append('%s=%s' % (name, v))
     return a
@@ -335,10 +335,10 @@ case('aumask', 'source_red_neutral', 'colors', {'source': 'red'})
 case('aumask', 'levels', 'detail', dict(AMOUNTS, dark=0.1, light=0.9))
 case('aumask', 'levels_hsl', 'detail', dict(AMOUNTS, dark=-0.2, light=1.2, source='lightness'))
 for s in ('brightness', 'value', 'lightness', 'green'):
-    case('aumask', 'mask_' + s, 'detail', {'output': 'mask', 'source': s, 'dark': 0.1})
+    case('aumask', 'mask_' + s, 'detail', {'output_mode': 'mask', 'source': s, 'dark': 0.1})
 for s in ('brightness', 'lightness'):
-    case('aumask', 'difference_' + s, 'detail', {'output': 'difference', 'source': s})
-case('aumask', 'difference_boost', 'detail', {'output': 'difference', 'diff_boost': -3.0,
+    case('aumask', 'difference_' + s, 'detail', {'output_mode': 'difference', 'source': s})
+case('aumask', 'difference_boost', 'detail', {'output_mode': 'difference', 'diff_boost': -3.0,
                                               'central_brightness': 0.3, 'radius': 8})
 case('aumask', 'rgba', 'detail_rgba', AMOUNTS)
 case('aumask', 'colors', 'colors', dict(AMOUNTS, radius=10, blur='selective'))
