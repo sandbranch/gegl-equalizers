@@ -247,7 +247,9 @@ typedef struct
   gfloat hue;
 } Basic;
 
-#define SQ(x) pow (x, 2)
+/* the plug-in's pow (x, 2): for a float x the product in double is
+ * exact, and so the same */
+#define SQ(x) ((gdouble) (x) * (gdouble) (x))
 
 static gfloat
 get_quad_bright (gfloat R, gfloat G, gfloat B)
