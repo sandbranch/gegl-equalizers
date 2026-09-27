@@ -1,0 +1,157 @@
+--- a/saturate.c
++++ b/saturate.c
+@@ -272,9 +272,9 @@
+ 
+ 	gtk_color_button_get_color ((GtkColorButton*) skinselector, &skincolor);
+ 	//printf ("Selected colors are: %.d, %.d and %.d\n",skincolor.red,skincolor.green,skincolor.blue);
+-	R=pow( (float)skincolor.red/65536,1/2.2 );
+-	G=pow( (float)skincolor.green/65536,1/2.2 );
+-	B=pow( (float)skincolor.blue/65536,1/2.2 );
++	R=pow( (float)skincolor.red/65535,1/2.2 ); //FIX 2: 65535, so that 8 bit colors (v * 257) are v / 255
++	G=pow( (float)skincolor.green/65535,1/2.2 );
++	B=pow( (float)skincolor.blue/65535,1/2.2 );
+ 	get_bright(R,G,B,0);
+ 	avg=pixeldata[0].brightness;
+ 
+@@ -286,7 +286,7 @@
+ 	Rint=skincolor.red/256;
+ 	Gint=skincolor.green/256;
+ 	Bint=skincolor.blue/256;
+-	RGBvaluestmp.r=Rint; RGBvaluestmp.g=Gint; RGBvaluestmp.b=Bint;
++	RGBvaluestmp.r=R; RGBvaluestmp.g=G; RGBvaluestmp.b=B; //FIX 3: the hues from the gammed values, as the pixels' hues
+ 	//HSV
+ 	gimp_rgb_to_hsv (&RGBvaluestmp,&HSVvaluestmp);
+ 	maindata.skincolors[3]=HSVvaluestmp.h;
+@@ -307,6 +307,13 @@
+     }
+ 
+ 
++//FIX 5: the distance of two hues on the circle of 0 to 1; a gray's HSL hue (-1) is as far as can be
++static gfloat huedist(gfloat a,gfloat b){
++	gfloat d;
++	if (a<0 || b<0) return 0.5f;
++	d=ABS(a-b);
++	return MIN(d,1-d);}
++
+ gfloat getYULskindist(gfloat R,gfloat G,gfloat B){
+ 	//this will calculate skindist distance in YUV colorspace
+ 	//CALLED BY: *block_saturate()
+@@ -399,31 +406,33 @@
+ void calibrate() {
+ 	//takes rect_in_guchar and calculate average RGB values
+ 	guint x,y,iterator,count;
+-	gfloat Rsum,Gsum,Bsum,avg;
++	gdouble Rsum,Gsum,Bsum; //FIX 7: every pixel, in double, row by row
++	gfloat avg;
+ 	gint basepos;
+ 	gint width,height,channels;
+ 	char collabeltext [50];
+ 	guchar *rect_preview;
+ 	
+-	iterator =2;
++	iterator =1; //FIX 7
+ 	Rsum=0;Gsum=0;Bsum=0;count=0;	
+ 	
+ 	rect_preview= gimp_zoom_preview_get_source (GIMP_ZOOM_PREVIEW (preview), &width,
+ 			 &height, &channels);
+ 	
+-	for(x=0;x<width;x=x+iterator) {
+-		for(y=0;y<height;y=y+iterator) {
+-			//printf ("Doing %.d x %.d\n",x,y);	
++	for(y=0;y<height;y=y+iterator) { //FIX 7
++		gdouble Rrow=0,Grow=0,Brow=0;
++		for(x=0;x<width;x=x+iterator) {
+ 			basepos=BASEPOS(x,y,channels,width);
+-			Rsum=Rsum+gammed_values[rect_preview[basepos  ]];
+-			Gsum=Gsum+gammed_values[rect_preview[basepos+1]];
+-			Bsum=Bsum+gammed_values[rect_preview[basepos+2]];
+-			count=count+1;}}
++			Rrow=Rrow+gammed_values[rect_preview[basepos  ]];
++			Grow=Grow+gammed_values[rect_preview[basepos+1]];
++			Brow=Brow+gammed_values[rect_preview[basepos+2]];
++			count=count+1;}
++		Rsum=Rsum+Rrow; Gsum=Gsum+Grow; Bsum=Bsum+Brow;}
+ 	
+ 	g_free (rect_preview);	
+-	maindata.colorbal[0]=(gfloat)Rsum/count;
+-	maindata.colorbal[1]=(gfloat)Gsum/count;
+-	maindata.colorbal[2]=(gfloat)Bsum/count;
++	maindata.colorbal[0]=(gfloat)(Rsum/count); //FIX 7
++	maindata.colorbal[1]=(gfloat)(Gsum/count);
++	maindata.colorbal[2]=(gfloat)(Bsum/count);
+ 	get_bright(maindata.colorbal[0],maindata.colorbal[1],maindata.colorbal[2],0);
+ 	//avg=pixeldata[0].brightness;
+ 	avg=(maindata.colorbal[0] + maindata.colorbal[1] + maindata.colorbal[2]) / 3.0;
+@@ -497,14 +506,17 @@
+     else if ( maindata.formula == QUADRSAFE) {
+ 		apply_quad_sat(R,G,B,avg,sat_boost);
+ 		//if (max3(*R,*G,*B)>1) printf ("max RGB exceeding 1: %.3f\n",max3(*R,*G,*B));
+-		if (min3(*R,*G,*B)<0) {  // UNOPTIMIZED !!!
+-			*R=*R-min3(*R,*G,*B);
+-			*G=*G-min3(*R,*G,*B);
+-			*B=*B-min3(*R,*G,*B);}
+-		if (max3(*R,*G,*B)>1) {  // UNOPTIMIZED !!!
+-			*R=*R-max3(*R,*G,*B)+1;
+-			*G=*G-max3(*R,*G,*B)+1;
+-			*B=*B-max3(*R,*G,*B)+1;}
++		gfloat m; //FIX 6: the same shift for the three channels
++		m=min3(*R,*G,*B);
++		if (m<0) {
++			*R=*R-m;
++			*G=*G-m;
++			*B=*B-m;}
++		m=max3(*R,*G,*B);
++		if (m>1) {
++			*R=*R-m+1;
++			*G=*G-m+1;
++			*B=*B-m+1;}
+        	}		
+ 	else if ( maindata.formula == HSV) {
+ 		RGBvalues[id].r=*R; RGBvalues[id].g=*G; RGBvalues[id].b=*B;
+@@ -750,8 +762,9 @@
+       			if (maindata.formula == QUADRATIC || maindata.formula == QUADRSAFE) {
+       				skindist=pow( (SQ(R-avg-maindata.skincolors[0]) + \
+       				SQ(G-avg-maindata.skincolors[1]) + SQ(B-avg-maindata.skincolors[2])) , 0.5);}
+-      			if  (maindata.formula == HSV) skindist=ABS(maindata.skincolors[3]-pixeldata[data->id].hue);
+-      			else if  (maindata.formula == HSV) skindist=ABS(maindata.skincolors[4]-pixeldata[data->id].hue);
++      			//FIX 5: an else, and HSL for the second HSV, so that Quadratic and HSL keep their own distance
++      			else if  (maindata.formula == HSV) skindist=huedist(maindata.skincolors[3],pixeldata[data->id].hue);
++      			else if  (maindata.formula == HSL) skindist=huedist(maindata.skincolors[4],pixeldata[data->id].hue);
+       			//for now for YUL colorspace standard algorithm is used
+       			else skindist=getYULskindist(R,G,B);
+       			
+@@ -771,12 +784,14 @@
+ 					//doing nothing
+ 					;}
+       			else if (maindata.skin < 0  &&  skindist > ABS(maindata.skin)){
+-					weight=(skindist - maindata.skinuplimit) / (maindata.skin - maindata.skinuplimit);
++					//FIX 4: the weight from 0 at |skin| to 1 at skinuplimit
++					weight=(skindist - ABS(maindata.skin)) / (maindata.skinuplimit - ABS(maindata.skin));
+       				sat_boost=sat_boost*weight+(1-weight);}
+       			else if (maindata.skin < 0  &&  skindist  > 0) {
+ 					sat_boost =1;
+ 					;}
+-				else printf ("Unrecognized color protection range\n");
++				else if (maindata.skin < 0) sat_boost =1; //FIX 4: a distance of 0 is inside the inverted range
++				else ; //(a distance of 0 is inside the normal range)
+       			
+    			
+ 				}
+@@ -873,7 +888,7 @@
+ 		gammed_values[c]=pow((gfloat)c/255,1/2.2);}
+ 	
+ 	//get values needed for skincolor protection
+-	if (maindata.skin>0) skincolorchanged();
++	if (maindata.skin!=0) skincolorchanged(); //FIX 4: also for the inverted range
+ 	
+ 	//setting docornbr
+ 	if (maindata.cornerbr[0] ==0 && maindata.cornerbr[1] ==0 &&  maindata.cornerbr[2] ==0  && maindata.cornerbr[3] ==0)
+@@ -939,7 +954,7 @@
+        	if (DEBUG) printf ("   Setting saturation borders #%1d: %3f\n",c,maindata.borders[c]) ;}
+ 	
+ 	//for case skinprotect is on
+-	if (maindata.skin>0) maindata.skinuplimit=MAX(maindata.skin*2.0,maindata.skin+0.05);
++	if (maindata.skin!=0) maindata.skinuplimit=MAX(ABS(maindata.skin)*2.0,ABS(maindata.skin)+0.05); //FIX 4
+ 
+ 	if (DEBUG) ITERATE(c,0,7) rangestat[c]=0;
+ 	

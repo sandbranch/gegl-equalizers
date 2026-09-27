@@ -1,0 +1,21 @@
+--- a/aumask.c
++++ b/aumask.c
+@@ -110,7 +110,7 @@
+ };
+ typedef struct
+ {
+-	gfloat boost[SLIDERS+1];
++	gfloat boost[SLIDERS+2]; //FIX 1: boost[5], the factor at 1.1, was read past the end (borders[0], 0)
+ 	gfloat borders[SLIDERS+2];
+ 	guint radius;
+ 	guint postradius;
+@@ -896,6 +896,9 @@
+ 		printf ("sharpen:mask-to-diff params (pos/boost): %.3f, %.3f\n",maindata.mask_pos,maindata.mask_boost);		
+ 		printf ("Drawable id: %.d\n",source->drawable_id);}
+ 
++	//FIX 1: the factor above 0.20 stays boost[4] (a slider of its own in the port)
++	maindata.boost[SLIDERS+1]=maindata.boost[SLIDERS];
++
+ 	if (!preview) gimp_progress_init ("Sharpening (AUMASK)...");
+ 
+ 	// getting coordinates of what will be processed

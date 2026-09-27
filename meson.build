@@ -1,0 +1,61 @@
+project('gegl-equalizers', 'c',
+  version: '0.1',
+  license: 'GPL-3.0-only',
+  meson_version: '>= 0.60.0',
+  default_options: ['warning_level=1', 'buildtype=debugoptimized'],
+)
+
+gegl_dep = dependency('gegl-0.4', version: '>= 0.4.62')
+math_dep = meson.get_compiler('c').find_library('m', required: false)
+
+# GEGL loads user operations from $XDG_DATA_HOME/gegl-0.4/plug-ins, which is
+# ~/.local/share/gegl-0.4/plug-ins, or for the Flatpak version of GIMP
+# ~/.var/app/org.gimp.GIMP/data/gegl-0.4/plug-ins.
+moduledir = get_option('moduledir')
+if moduledir == ''
+  moduledir = gegl_dep.get_variable(pkgconfig: 'pluginsdir')
+endif
+
+# each operation is a module of its own
+operations = {
+  'saturation-equalizer': ['operations/saturation-equalizer.c'],
+  'advanced-unsharp-mask': ['operations/advanced-unsharp-mask.c'],
+}
+
+foreach op, sources : operations
+  shared_module(op,
+    sources,
+    name_prefix: '',
+    include_directories: 'operations',
+    dependencies: [gegl_dep, math_dep],
+    c_args: ['-DGETTEXT_PACKAGE="gegl-equalizers"'],
+    install: true,
+    install_dir: moduledir,
+  )
+endforeach
+
+test_c_args = ['-DGEGL_PLUGINSDIR="@0@"'.format(
+  gegl_dep.get_variable(pkgconfig: 'pluginsdir'))]
+
+# numerical checks of the operations: tests/check.sh, or meson test -C build
+check = executable('check', 'tests/check.c',
+  dependencies: [gegl_dep, math_dep],
+  c_args: test_c_args,
+  install: false,
+)
+test('operations', check, args: [meson.current_build_dir()], timeout: 900)
+
+# runs an operation on a raw 8 bit image, for the comparison with the
+# original plug-ins (tests/orig-check.sh)
+executable('eq-apply', 'tests/eq-apply.c',
+  dependencies: [gegl_dep],
+  c_args: test_c_args,
+  install: false,
+)
+
+# how long the operations take on a 24 megapixel image: tests/bench.sh
+executable('bench', 'tests/bench.c',
+  dependencies: [gegl_dep, math_dep],
+  c_args: test_c_args,
+  install: false,
+)
