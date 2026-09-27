@@ -32,7 +32,8 @@ WORK = os.path.join(ORIG, 'work')
 os.makedirs(WORK, exist_ok=True)
 W, H = 192, 128
 failed = []
-totals = {'pixels': 0, 'same': 0, 'one': 0, 'orig_same': 0}
+totals = {'pixels': 0, 'same': 0, 'one': 0, 'orig_same': 0, 'cases': 0,
+          'elsewhere': 0, 'elsewhere_max': 0}
 
 
 def clamp8(v):
@@ -251,6 +252,16 @@ def case(kind, label, image, props, port_props=None):
     mf, df, bf, af = compare(port, outs['fixed'], ch)
     mo, do, bo, ao = compare(port, outs['orig'], ch)
     mx, dx, bx, ax = compare(outs['fixed'], outs['orig'], ch)
+    # where the fixes change nothing, how far the operation is from the
+    # original
+    for i in range(len(port) // ch):
+        a = outs['orig'][i * ch:i * ch + 3]
+        if a == outs['fixed'][i * ch:i * ch + 3]:
+            d = max(abs(x - y) for x, y in zip(a, port[i * ch:i * ch + 3]))
+            if d:
+                totals['elsewhere'] += 1
+                totals['elsewhere_max'] = max(totals['elsewhere_max'], d)
+    totals['cases'] += 1
     n = len(port) // ch
     ok = bf == 0 and af and (ch == 3 or data[3::4] == port[3::4])
     totals['pixels'] += n
@@ -349,5 +360,10 @@ print('NOTE  all cases: %d pixels; the operation equals the original with the fi
       '%.3f %%, differs by 1 at %.3f %%; equals the original as it is at %.3f %%'
       % (p, 100.0 * totals['same'] / p, 100.0 * totals['one'] / p,
          100.0 * totals['orig_same'] / p))
+print('NOTE  %d cases; where the fixes change nothing, the operation differs from the '
+      'original at %d pixels, by at most %d'
+      % (totals['cases'], totals['elsewhere'], totals['elsewhere_max']))
+if totals['elsewhere_max'] > 1:
+    failed.append('elsewhere')
 print('%d failed' % len(failed))
 sys.exit(1 if failed else 0)

@@ -89,8 +89,10 @@ for v in orig fixed; do
 done
 [ $status = 0 ] || { snapshot_end orig; exit 1; }
 
-# built as gimptool-2.0 built them (no -O, so the plug-ins' reads past
-# the end of an array stay plain reads); inline as in GCC before 5
+# built as gimptool-2.0 built them: without -O (the compile line a user
+# posted on AUMASK's registry page in 2013 has none), so the plug-ins'
+# read past the end of an array stays a plain read; inline as in GCC
+# before 5
 cflags="-std=gnu99 -fgnu89-inline -O0 -w -pthread"
 for v in orig fixed; do
     for p in aumask sateq; do
