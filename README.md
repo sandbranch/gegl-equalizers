@@ -179,7 +179,8 @@ which finds the folder:
     ../gimp-devtools/gimp-build.sh . ninja -C build install
 
 That installs `saturation-equalizer.so` and `advanced-unsharp-mask.so`
-into `~/.local/share/gegl-0.4/plug-ins`. Restart GIMP.
+into `~/.local/share/gegl-0.4/plug-ins/gegl-equalizers` (a folder of
+their own, which GEGL also loads). Restart GIMP.
 
 ## Tests
 
