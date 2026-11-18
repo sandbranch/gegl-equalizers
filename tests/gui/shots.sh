@@ -108,7 +108,7 @@ session () {
         $cdp "$view" $FILTERS shot:"$docs/enhance-menu.png" >/dev/null &&
           pass "enhance: Filters > Enhance with Advanced Unsharp Mask";;
     sat)
-        open_filter "click:$MENU wait:1000" "$SAT_ITEM" sat || return
+        open_filter "click:$MENU wait:1000" "$SAT_ITEM" sat || { stop_all; return; }
         # the first four bands up (the upper half of a slider sets its
         # value where it is clicked), then the split view
         $cdp "$view" click:"$(p "$(slider 350 0 400)" 106)" wait:1500 \
@@ -119,13 +119,13 @@ session () {
           click:"$(p 360 642)" wait:6000 shot:"$docs/saturation-equalizer.png" >/dev/null &&
           pass "sat: bands raised, split view";;
     au)
-        open_filter "$FILTERS" "$AU_ITEM" au || return
+        open_filter "$FILTERS" "$AU_ITEM" au || { stop_all; return; }
         # shellcheck disable=SC2046
         $cdp "$view" $(au_amounts) click:"$(p 400 474)" wait:6000 \
           shot:"$docs/advanced-unsharp-mask.png" >/dev/null &&
           pass "au: amounts raised, split view";;
     live)
-        open_filter "$FILTERS" "$AU_ITEM" live || return
+        open_filter "$FILTERS" "$AU_ITEM" live || { stop_all; return; }
         # shellcheck disable=SC2046
         $cdp "$view" $(au_amounts) wait:3000 click:"$(p 450 509)" wait:4000 \
           shot:"$docs/advanced-unsharp-mask-applied.png" >/dev/null
@@ -148,7 +148,7 @@ done
 xcf=$gui_out/gui-layer.xcf
 if [ -f "$xcf" ]; then
     GIMP3_DIRECTORY="$out/gimp-profile"
-    GEGL_PATH="$out/gimp-check-modules:/app/lib/gegl-0.4"
+    GEGL_PATH="$out/gimp-check-modules:$gegl_ops"
     export GIMP3_DIRECTORY GEGL_PATH
     pass_env="GIMP3_DIRECTORY GEGL_PATH"
     run_prefix="--timeout=600" in_gimp gimp-console-3.2 --no-interface --no-data --no-fonts \

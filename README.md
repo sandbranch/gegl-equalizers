@@ -162,20 +162,28 @@ linear images GEGL hands the operation their encoded values. The weights
 
 ## Building and installing
 
-With the Flatpak GIMP, and ../gimp-devtools (github.com/sandbranch/gimp-devtools):
+For the native GIMP 3 (the GIMP Flatpak is not supported), with GEGL
+0.4.62 or later and its development files; on Debian and Ubuntu:
+
+    sudo apt install gimp libgimp-3.0-dev meson ninja-build
+
+Then:
+
+    meson setup build -Dmoduledir=$HOME/.local/share/gegl-0.4/plug-ins
+    ninja -C build install
+
+or the same through ../gimp-devtools (github.com/sandbranch/gimp-devtools),
+which finds the folder:
 
     ../gimp-devtools/gimp-build.sh . meson setup build -Dmoduledir=\$GEGL_OPDIR
     ../gimp-devtools/gimp-build.sh . ninja -C build install
 
 That installs `saturation-equalizer.so` and `advanced-unsharp-mask.so`
-into `~/.var/app/org.gimp.GIMP/data/gegl-0.4/plug-ins`. Natively, with
-GEGL 0.4.62 or later: `meson setup build -Dmoduledir=~/.local/share/gegl-0.4/plug-ins`
-and `ninja -C build install`. Restart GIMP.
+into `~/.local/share/gegl-0.4/plug-ins`. Restart GIMP.
 
 ## Tests
 
-All run inside the Flatpak GIMP's SDK (or natively with
-GIMP_FLATPAK=0), with HOME and the XDG folders in tests/output and a
+All run against the native GIMP (built with gimp-devtools), with HOME and the XDG folders in tests/output and a
 throwaway GIMP profile, and list the user's folders of GIMP and other
 apps before and after (tests/isolate.sh, a copy of
 gimp-devtools/isolate.sh): each fails if anything there changed.
@@ -205,13 +213,14 @@ gimp-devtools/isolate.sh): each fails if anything there changed.
   for a moved layer; NaN, infinities, 1e30, extremes of every setting,
   1 x 1 layers; 8 and 16 bit, half, double, linear and gray buffers,
   another color space; the menu keys.
-- **tests/gimp-check.sh**: in headless GIMP 3.2.6, both filters as
+- **tests/gimp-check.sh**: in headless GIMP 3.2.8, both filters as
   Gimp.DrawableFilter on RGB images of every precision and on
   grayscale: non-destructive, settings kept through an XCF save and
   load, the same pixels as plain GEGL (max difference 0) and as the gegl
   command line (0). (The gegl command line counts one leaked buffer at
   its exit for the saturation cases, as it does for GEGL's own
-  gegl:unsharp-mask; the script notes it.)
+  gegl:unsharp-mask; the script notes it.) Needs the gegl command line
+  (on Debian and Ubuntu the package `gegl`).
 - **tests/gui/shots.sh**: the menus and dialogs in GIMP on a Broadway
   display, driven by a headless Chrome, for the screenshots here, and a
   filter applied with OK, saved, and live after loading the XCF.

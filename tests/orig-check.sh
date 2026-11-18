@@ -13,8 +13,8 @@
 # only the dialog, its callbacks, query and run are dropped) and builds
 # it with tests/orig/fake-gimp.h and a harness (tests/orig/harness-*.c)
 # twice: as it is, and with the changes of the operations made in the
-# plug-in's own code (tests/orig/*-fixes.patch). With the Flatpak GIMP
-# everything builds and runs inside its SDK (gimp-devtools/gimp-build.sh).
+# plug-in's own code (tests/orig/*-fixes.patch). Everything builds and
+# runs against the native GIMP (gimp-devtools/gimp-build.sh).
 # Lists the user's GIMP folders before and after and fails if anything
 # changed.
 #

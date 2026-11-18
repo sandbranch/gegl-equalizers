@@ -1,5 +1,5 @@
 #!/bin/sh
-# The operations as non-destructive filters in the Flatpak GIMP, without
+# The operations as non-destructive filters in the native GIMP, without
 # a window (tests/gimp-check.py): on RGB images of every precision and a
 # grayscale one, through an XCF save and load, against plain GEGL; then
 # GIMP's results against the gegl command line. Uses the modules from
@@ -9,7 +9,8 @@
 # the user's GIMP settings are not touched; the user's GIMP folders are
 # listed before and after and must not change. GIMP loads no fonts
 # (--no-fonts). The first run takes about a minute (GIMP sets up the new
-# profile). Exits non-zero if a check fails.
+# profile). The comparison needs the gegl command line (on Debian and
+# Ubuntu the package gegl). Exits non-zero if a check fails.
 #
 # Copyright 2026 David
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -32,17 +33,13 @@ status=0
 snapshot_begin gimp
 
 GIMP3_DIRECTORY="$out/gimp-profile"
-GEGL_PATH="$mod:/app/lib/gegl-0.4"
+GEGL_PATH="$mod:$gegl_ops"
 EQ_CHECK_OUT="$check_out"
 export GIMP3_DIRECTORY GEGL_PATH EQ_CHECK_OUT
 pass_env="GIMP3_DIRECTORY GEGL_PATH EQ_CHECK_OUT"
-# the Flatpak's GIMP unless GIMP_FLATPAK=0 (as gimp-run.sh chooses)
-if [ "${GIMP_FLATPAK:-}" != 0 ] && command -v flatpak >/dev/null 2>&1 &&
-   flatpak info org.gimp.GIMP >/dev/null 2>&1; then
-    console=gimp-console-3.2
-else
-    console=$(command -v gimp-console-3.2 || command -v gimp-console)
-fi
+[ -n "$gegl_ops" ] || { echo "FAIL  no GEGL development files (pkg-config gegl-0.4)"; exit 1; }
+console=$(command -v gimp-console-3.2 || command -v gimp-console)
+[ -n "$console" ] || { echo "FAIL  no gimp-console on the PATH"; exit 1; }
 
 run_prefix="--timeout=1800" in_gimp $console --no-interface --no-data --no-fonts \
   --batch-interpreter python-fu-eval \
@@ -62,6 +59,9 @@ for label, c in json.load(open(sys.argv[1])).items():
         props.append('%s=%s' % (k.replace('_', '-'), v))
     print(label, c['op'], ' '.join(props))
 EOF
+command -v gegl >/dev/null 2>&1 || {
+    echo "FAIL  no gegl command line (on Debian and Ubuntu: sudo apt install gegl)"
+    status=1; }
 while read -r label op props; do
     # shellcheck disable=SC2086
     in_gimp gegl "$check_out/scene.tif" -o "$check_out/cli-$label.tif" -- $op $props \
@@ -69,7 +69,7 @@ while read -r label op props; do
       { echo "FAIL  gegl command line for $label"; status=1; }
 done < "$check_out/cli.txt"
 # GEGL's own count of buffers left at its exit. The gegl command line
-# (GEGL 0.4.72 of the Flatpak) reports one for some of its own
+# (GEGL 0.4.72) reports one for some of its own
 # operations too (gegl:unsharp-mask, gegl:stretch-contrast), so a count
 # here is checked against GEGL's gegl:unsharp-mask on the same image;
 # tests/check.sh counts leaked buffers of the operations themselves

@@ -11,7 +11,7 @@ originals option by option). Tested with tests/orig-check.sh (the
 originals' own code, downloaded and checksum-verified, as it is and with
 the fixes: every pixel within 1 level of the fixed original, 99.987 %
 identical), tests/check.sh (83 checks, also under ASan and UBSan),
-tests/gimp-check.sh (GIMP 3.2.6 Flatpak: every precision, grayscale,
+tests/gimp-check.sh (the native GIMP 3.2.8: every precision, grayscale,
 XCF, the command line), tests/gui/shots.sh (the menus and dialogs on
 Broadway, looked at, and a live filter through an XCF), tests/bench.sh.
 
