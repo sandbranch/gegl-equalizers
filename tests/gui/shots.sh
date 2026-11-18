@@ -75,7 +75,10 @@ MENU=321,49
 # Filters, then Enhance (its submenu opens on hover, then Right)
 FILTERS="click:426,49 wait:1200 move:450,176 wait:600 move:456,175 wait:1500 key:Right wait:1200"
 SAT_ITEM=393,753
-AU_ITEM=749,500
+# Advanced Unsharp Mask is opened by its name from Search Actions (/),
+# so that the other filters in Filters > Enhance cannot move it; on
+# Broadway the search field needs a click before it takes the keys
+SEARCH_FIELD=360,176
 # Advanced Unsharp Mask: the four amounts for small to large differences
 au_amounts () {
     echo click:"$(p "$(slider 200 0 250)" 165)" wait:1500 \
@@ -83,8 +86,16 @@ au_amounts () {
       click:"$(p "$(slider 200 0 250)" 221)" wait:1500 \
       click:"$(p "$(slider 160 0 250)" 249)" wait:1500
 }
+# search_filter "<filter name>" <name>: open it from Search Actions
+search_filter () {
+    $cdp "$view" key:/ wait:1500 click:$SEARCH_FIELD wait:500 text:"$1" wait:1500 \
+      shot:"$gui_out/$2-search.png" key:Enter wait:4000 >/dev/null
+    move_dialog || { fail "$2: no dialog"; return 1; }
+    pass "$2: the dialog opened"
+}
 # open_filter "<steps to the menu>" <item> <name>
 open_filter () {
+    # shellcheck disable=SC2086
     # shellcheck disable=SC2086
     $cdp "$view" $1 click:"$2" wait:4000 >/dev/null
     move_dialog || { fail "$3: no dialog"; return 1; }
@@ -119,13 +130,13 @@ session () {
           click:"$(p 360 642)" wait:6000 shot:"$docs/saturation-equalizer.png" >/dev/null &&
           pass "sat: bands raised, split view";;
     au)
-        open_filter "$FILTERS" "$AU_ITEM" au || { stop_all; return; }
+        search_filter "Advanced Unsharp Mask" au || { stop_all; return; }
         # shellcheck disable=SC2046
         $cdp "$view" $(au_amounts) click:"$(p 400 474)" wait:6000 \
           shot:"$docs/advanced-unsharp-mask.png" >/dev/null &&
           pass "au: amounts raised, split view";;
     live)
-        open_filter "$FILTERS" "$AU_ITEM" live || { stop_all; return; }
+        search_filter "Advanced Unsharp Mask" live || { stop_all; return; }
         # shellcheck disable=SC2046
         $cdp "$view" $(au_amounts) wait:3000 click:"$(p 450 509)" wait:4000 \
           shot:"$docs/advanced-unsharp-mask-applied.png" >/dev/null
